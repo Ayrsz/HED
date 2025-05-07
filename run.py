@@ -14,8 +14,8 @@ from loss_hed import loss
 lr = 1e-3
 batch_size = 10
 device = "cuda:2" if torch.cuda.is_available() else "cpu"
-epochs = 10
-step_lr = False
+epochs = 100
+step_lr = True
 momentum = 0.9
 weight_decay = 0.0002
 
