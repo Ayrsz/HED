@@ -7,13 +7,14 @@ import hed
 from hed import HED
 import train
 import dataset
-from sklearn.metrics import average_precision_score
+from loss_hed import loss
+
 
 #Hyper parameters
 lr = 1e-3
 batch_size = 10
-device = "cuda:1" if torch.cuda.is_available() else "cpu"
-epochs = 100
+device = "cuda:2" if torch.cuda.is_available() else "cpu"
+epochs = 5
 step_lr = False
 momentum = 0.9
 weight_decay = 0.0002
@@ -29,7 +30,7 @@ loader_train = dataset.create_dataloader(dataset_train, batch_size)
 loader_val = dataset.create_dataloader(dataset_val, batch_size)
 
 #Instance Modelcd 
-model = hed.HED().to(device)
+model = hed.HED(loss).to(device)
 model.load_pre_treined_weigths_vgg(device)
 
 #Optimizer

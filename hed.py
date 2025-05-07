@@ -11,11 +11,10 @@ from imutils import rotate_bound
 from tqdm import tqdm
 
 class HED(nn.Module):
-    def __init__(self):
+    def __init__(self, loss_func = nn.BCEWithLogitsLoss()):
         super().__init__()
+        self.loss_fn = loss_func
 
-        self.loss_fn = nn.BCEWithLogitsLoss()
-    
         mean = [0.485, 0.456, 0.406]  # RGB
         std = [0.229, 0.224, 0.225]   # RGB
         
@@ -92,7 +91,7 @@ class HED(nn.Module):
         
         self.generate_image_from_side_resultVGG5 = nn.Sequential(
             nn.Conv2d(in_channels = 512, out_channels= 1, kernel_size= 1, stride = 1, padding = 0),
-            nn.Upsample(scale_factor= 16, mode = "bilinear", align_corners= False)
+            
             )
 
         #Join of all side outputs
@@ -105,7 +104,7 @@ class HED(nn.Module):
 
     def forward(self, x, return_side_outputs = False):
         x = x / 255
-        #x = self.treat(x)
+        x = self.treat(x)
         #Vggnet, without the dense layer and the last maxpool layer
         vgg1 = self.VGG1(x)
         vgg2 = self.VGG2(vgg1)
@@ -127,7 +126,7 @@ class HED(nn.Module):
         image_four_scaled = F.interpolate(result_4 , size = (x.shape[2], x.shape[3]), mode = "bilinear", align_corners= False)
         image_five_scaled = F.interpolate(result_5, size = (x.shape[2], x.shape[3]), mode = "bilinear", align_corners= False)
 
-        stacked = torch.cat([image_five_scaled, image_four_scaled, image_three_scaled, image_two_scaled, image_one_scaled], dim = 1)
+        stacked = torch.cat([image_one_scaled, image_two_scaled, image_three_scaled, image_four_scaled, image_five_scaled], dim = 1)
         final_response = self.join_images(stacked)
         if not(return_side_outputs):
             return final_response
