@@ -91,7 +91,7 @@ class HED(nn.Module):
         
         self.generate_image_from_side_resultVGG5 = nn.Sequential(
             nn.Conv2d(in_channels = 512, out_channels= 1, kernel_size= 1, stride = 1, padding = 0),
-            
+            nn.Upsample(scale_factor= 16, mode = "bilinear", align_corners= False)
             )
 
         #Join of all side outputs
@@ -103,7 +103,6 @@ class HED(nn.Module):
 
 
     def forward(self, x, return_side_outputs = False):
-        x = x / 255
         x = self.treat(x)
         #Vggnet, without the dense layer and the last maxpool layer
         vgg1 = self.VGG1(x)

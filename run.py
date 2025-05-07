@@ -3,10 +3,10 @@ import torch.nn as nn
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
-import hed 
-from hed import HED
-import train
-import dataset
+import structure.hed as hed 
+from structure.hed import HED
+import structure.train as train
+import structure.dataset as dataset
 from loss_hed import loss
 
 
@@ -14,7 +14,7 @@ from loss_hed import loss
 lr = 1e-3
 batch_size = 10
 device = "cuda:2" if torch.cuda.is_available() else "cpu"
-epochs = 5
+epochs = 10
 step_lr = False
 momentum = 0.9
 weight_decay = 0.0002

@@ -5,7 +5,7 @@ import numpy as np
 import os
 import cv2 as cv
 import matplotlib.pyplot as plt
-from dataset import BSDS500
+from structure.dataset import BSDS500
 from tqdm import tqdm
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import precision_recall_fscore_support
@@ -224,6 +224,8 @@ def save_side_outputs(model, epoch, data, idx_dir, device):
     # Treat the results
     im_tensor = im_tensor.unsqueeze(0)
     final_output, side_outputs = model.forward(im_tensor.to(device), return_side_outputs= True)
+    final_output = torch.sigmoid(final_output)
+    side_outputs = torch.sigmoid(side_outputs)
     joint = torch.cat([final_output, side_outputs], dim = 1)
     joint.squeeze_()
 
