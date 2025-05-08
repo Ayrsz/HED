@@ -7,15 +7,16 @@ import structure.hed as hed
 from structure.hed import HED
 import structure.train as train
 import structure.dataset as dataset
-from loss_hed import loss
+from structure.utils.loss_hed import loss
+from structure.utils.original import load_original_hed
 
 
 #Hyper parameters
 lr = 1e-3
 batch_size = 10
 device = "cuda:2" if torch.cuda.is_available() else "cpu"
-epochs = 100
-step_lr = True
+epochs = 1
+step_lr = False
 momentum = 0.9
 weight_decay = 0.0002
 
@@ -43,7 +44,7 @@ train.save_new_state(model)
 #Load pre-treined
 #model = train.load_state(device)
 #print(model)
-#train.plot_result_compare_to_gt(model, train.load_original_hed(), dataset.BSDS500(dataset_path, subset = "test"), device)
+#train.plot_result_compare_to_gt(model, original.load_original_hed(), dataset.BSDS500(dataset_path, subset = "test"), device)
 
 
 

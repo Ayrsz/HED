@@ -51,12 +51,17 @@ def train_model(loader_train, loader_val, dataset_test, model, optmizer, device,
     losses = np.empty(epochs)
     new_idx = get_new_idx()
     
+    
+
     os.mkdir(f"./states/model_{new_idx}")
     if(epochs >= 10):
         number_of_epochs_to_print = [int(epochs*(fraction/4)) for fraction in range(4)]
 
-    if (step_lr):
+    
+    if (step_lr and epochs > 1):
         steper = StepLR(optimizer = optmizer, step_size= (3*epochs)//4, gamma = 0.1)
+    if (step_lr and epochs <= 1):
+        raise AttributeError("step_lr are true and the number of epochs are lower than 2")
     
     for i in range(epochs):
         train_loop(loader_train, model, optmizer, i, device)
@@ -70,14 +75,7 @@ def train_model(loader_train, loader_val, dataset_test, model, optmizer, device,
 
     save_side_outputs(model = model, epoch = "final", data = BSDS500(root_bsds = "./BSDS500/", subset = "test"), idx_dir = new_idx,  device = device)
     write_graph_loss(losses)
-    
-    #txt_file = f"./states/model_{new_idx}/Metrics.txt"
 
-    #with open(txt_file, "w") as f:
-        #f.write("Metrics of the implementation\n")
-        #f.close()
-
-    #save_average_precision(model, data_test = dataset_test, dir = txt_file, device = device)
     
 
 def list_only_dirs(root_path):
@@ -127,12 +125,6 @@ def load_state(device, state = None):
     model = torch.load(f"./states/model_{numbers[idx]:02d}/model#{numbers[idx]:02d}.pth", weights_only = False, map_location= torch.device(device))
     return model
 
-def load_original_hed():
-    protoPath = "./original_hed/deploy.prototxt"
-    modelPath = "./original_hed/hed_pretrained_bsds.caffemodel"
-    model = cv.dnn.readNetFromCaffe(protoPath, modelPath)
-    cv.dnn_registerLayer('Crop', CropLayer)
-    return model
 
 def plot_result_compare_to_gt(model, net_from_article, data, device):
     fig = plt.figure(figsize = (20, 10))
@@ -248,107 +240,3 @@ def save_side_outputs(model, epoch, data, idx_dir, device):
     fig.savefig(dir_epoch + f"/epoch_{epoch}.png", bbox_inches='tight', dpi=300)
     plt.close()
 
-
-#### METRICS ####
-def get_average_precision(model, data_test, device) -> float:
-    total_precision = []
-    
-    for image_input, gt in data_test:
-        image_input = torch.unsqueeze(image_input, 0).to(device)
-        return_from_model = treat_image_to_np(model(image_input))
-
-        gt = np.array(gt, dtype = np.float32)
-        y_true = gt.flatten().astype(np.uint8)
-        y_pred = return_from_model.flatten().astype(np.float32)
-        total_precision.append(average_precision_score(y_true, y_pred))
-
-    return np.mean(total_precision)
-
-def save_average_precision(model, data_test, dir, device):
-    AP = get_average_precision(model, data_test, device)
-    try:
-        with open(dir, "a") as f:
-            f.write(f"AP: {AP:.02f}")
-    except Exception as e:
-        print(f"{dir} erro : {e}")
-
-def return_metrics(model, data_test, device):
-    thresholds = np.linspace(0.01, 0.99, 99)
-    ods = 0
-    best_threshold_ods = 0
-
-    f1s_per_image = []
-
-    for thresh in thresholds:
-        all_preds = []
-        all_targets = []
-
-        for i in range(len(data_test)):
-            im_original, gt = data_test[i]
-            im_original.unsqueeze_(0)
-
-            im_pred = model.forward(im_original.to(device))
-            im_pred_np = treat_image_to_np(im_pred)
-
-            bin_pred = (im_pred_np >= thresh).astype(np.uint8)
-            all_preds.extend(bin_pred.flatten())
-            all_targets.extend(gt.flatten())
-
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            all_targets, all_preds, average='binary', zero_division=0
-        )
-
-        if f1 > ods:
-            ods = f1
-            best_threshold_ods = thresh
-
-    # Calcular OIS: melhor threshold individual por imagem
-    for i in range(len(data_test)):
-        best_f1 = 0
-        im_original, gt = data_test[i]
-
-
-        gt = gt.cpu().numpy()
-
-        im_original.unsqueeze_(0)
-
-        im_pred = model.forward(im_original.to(device))
-        im_pred_np = treat_image_to_np(im_pred)
-
-        for thresh in thresholds:
-            bin_pred = (im_pred_np >= thresh).astype(np.uint8)
-            precision, recall, f1, _ = precision_recall_fscore_support(
-                gt.flatten(), bin_pred.flatten(), average='binary', zero_division=0
-            )
-            best_f1 = max(best_f1, f1)
-        f1s_per_image.append(best_f1)
-        torch.cuda.empty_cache()
-
-
-    ois = np.mean(f1s_per_image)
-
-    return ods, best_threshold_ods, ois
-
-class CropLayer(object):
-        def __init__(self, params, blobs):
-            self.xstart = 0
-            self.xend = 0
-            self.ystart = 0
-            self.yend = 0
-
-        # Our layer receives two inputs. We need to crop the first input blob
-        # to match a shape of the second one (keeping batch size and number of channels)
-        def getMemoryShapes(self, inputs):
-            inputShape, targetShape = inputs[0], inputs[1]
-            batchSize, numChannels = inputShape[0], inputShape[1]
-            height, width = targetShape[2], targetShape[3]
-
-            self.ystart = int((inputShape[2] - targetShape[2]) / 2)
-            self.xstart = int((inputShape[3] - targetShape[3]) / 2)
-            self.yend = self.ystart + height
-            self.xend = self.xstart + width
-
-            return [[batchSize, numChannels, height, width]]
-
-        def forward(self, inputs):
-            return [inputs[0][:,:,self.ystart:self.yend,self.xstart:self.xend]]
