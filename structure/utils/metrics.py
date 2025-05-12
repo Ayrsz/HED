@@ -66,8 +66,9 @@ def AP(model, data_test, device) -> float:
     return np.mean(total_precision)
 
 
-def write_scores():
-    pass
+def write_scores(dir, idx):
+    columns = ["AP", "OIS", "ODS", "F1_VALUES"]
+    
 
 if __name__ == "__main__":
     pred = cv.imread("imagem_bordas_urso.jpg", 0)

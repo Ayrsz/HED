@@ -14,13 +14,6 @@ class HED(nn.Module):
     def __init__(self, loss_func = nn.BCEWithLogitsLoss()):
         super().__init__()
         self.loss_fn = loss_func
-
-        mean = [0.485, 0.456, 0.406]  # RGB
-        std = [0.229, 0.224, 0.225]   # RGB
-        
-        self.treat = transforms.Compose([
-            transforms.Normalize(mean, std)
-        ])
         
         self.VGG1 = nn.Sequential(
             nn.Conv2d(in_channels = 3, out_channels = 64, kernel_size= 3, stride=1, padding=1),
@@ -70,40 +63,38 @@ class HED(nn.Module):
         #We need to turn the network to only one dimension.
         self.generate_image_from_side_resultVGG1 = nn.Sequential(
             nn.Conv2d(in_channels = 64 , out_channels= 1, kernel_size= 1, stride = 1, padding = 0),
-            nn.Upsample(scale_factor= 1, mode = "bilinear", align_corners= False)
             )
                                                                  
         self.generate_image_from_side_resultVGG2 = nn.Sequential(
             nn.Conv2d(in_channels = 128, out_channels= 1, kernel_size= 1, stride = 1, padding = 0),
-            nn.Upsample(scale_factor= 2, mode = "bilinear", align_corners= False)
             )
         
         self.generate_image_from_side_resultVGG3 = nn.Sequential(
             nn.Conv2d(in_channels = 256, out_channels= 1, kernel_size= 1, stride = 1, padding = 0),
-            nn.Upsample(scale_factor= 4, mode = "bilinear", align_corners= False)
             )
         
 
         self.generate_image_from_side_resultVGG4 = nn.Sequential(
             nn.Conv2d(in_channels = 512, out_channels= 1, kernel_size= 1, stride = 1, padding = 0),
-            nn.Upsample(scale_factor= 8, mode = "bilinear", align_corners= False)
             )
         
         self.generate_image_from_side_resultVGG5 = nn.Sequential(
             nn.Conv2d(in_channels = 512, out_channels= 1, kernel_size= 1, stride = 1, padding = 0),
-            nn.Upsample(scale_factor= 16, mode = "bilinear", align_corners= False)
             )
 
         #Join of all side outputs
         self.join_images = nn.Sequential(
-            nn.Conv2d(5, 64, kernel_size = 3, padding = 1),
-            nn.ReLU(),
-            nn.Conv2d(64, 1, kernel_size=1)
+            nn.Conv2d(5, 1, kernel_size = 3, padding = 1),
+            nn.Sigmoid()
         )
 
+    def treat(x):
+        return x - torch.tensor(data=[104.00698793, 116.66876762, 122.67891434], dtype=x.dtype, device=x.device).view(1, 3, 1, 1)
 
-    def forward(self, x, return_side_outputs = False):
+    def forward(self, x : torch.Tensor, return_side_outputs = False) -> torch.Tensor:
+        x = x.view(1, 3, 1, 1)
         x = self.treat(x)
+
         #Vggnet, without the dense layer and the last maxpool layer
         vgg1 = self.VGG1(x)
         vgg2 = self.VGG2(vgg1)
