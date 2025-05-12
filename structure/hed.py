@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 from imutils import rotate_bound
 from tqdm import tqdm
 
+def treat(x):
+        return x - torch.tensor(data=[104.00698793, 116.66876762, 122.67891434], dtype=x.dtype, device=x.device).view(1, 3, 1, 1)
+
 class HED(nn.Module):
     def __init__(self, loss_func = nn.BCEWithLogitsLoss()):
         super().__init__()
@@ -88,12 +91,11 @@ class HED(nn.Module):
             nn.Sigmoid()
         )
 
-    def treat(x):
-        return x - torch.tensor(data=[104.00698793, 116.66876762, 122.67891434], dtype=x.dtype, device=x.device).view(1, 3, 1, 1)
 
     def forward(self, x : torch.Tensor, return_side_outputs = False) -> torch.Tensor:
-        x = x.view(1, 3, 1, 1)
-        x = self.treat(x)
+        if len(x.shape) == 3:
+            x = torch.unsqueeze(x, 0)
+        x = treat(x)
 
         #Vggnet, without the dense layer and the last maxpool layer
         vgg1 = self.VGG1(x)
@@ -118,6 +120,9 @@ class HED(nn.Module):
 
         stacked = torch.cat([image_one_scaled, image_two_scaled, image_three_scaled, image_four_scaled, image_five_scaled], dim = 1)
         final_response = self.join_images(stacked)
+
+        torch.sigmoid_(stacked)
+
         if not(return_side_outputs):
             return final_response
         else:

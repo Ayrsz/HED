@@ -15,12 +15,18 @@ def train_loop(dataloader, model, optimizer, eppoch, device):
 
 
     for (X, y) in tqdm(dataloader, desc = f"Época {eppoch+1}", ):
+        
         X, y = X.to(device), y.to(device)
         y = y.unsqueeze(1)
 
-        pred = model(X)
-        loss = model.loss_fn(pred, y)
+        pred, side_outs = model.forward(X, return_side_outputs = True)
 
+
+        loss = model.loss_fn(pred, y, fuse_layer = True )
+
+        #Indice 0 its the batch indice
+        for one_batch in side_outs: 
+            loss += model.loss_fn(one_batch, y)
         # Backpropagation
         loss.backward()
         optimizer.step()
@@ -216,7 +222,6 @@ def save_side_outputs(model, epoch, data, idx_dir, device):
     # Treat the results
     im_tensor = im_tensor.unsqueeze(0)
     final_output, side_outputs = model.forward(im_tensor.to(device), return_side_outputs= True)
-    final_output = torch.sigmoid(final_output)
     side_outputs = torch.sigmoid(side_outputs)
     joint = torch.cat([final_output, side_outputs], dim = 1)
     joint.squeeze_()

@@ -14,8 +14,8 @@ from structure.utils.original import load_original_hed
 #Hyper parameters
 lr = 1e-3
 batch_size = 10
-device = "cuda:2" if torch.cuda.is_available() else "cpu"
-epochs = 1
+device = "cuda:1" if torch.cuda.is_available() else "cpu"
+epochs = 10
 step_lr = False
 momentum = 0.9
 weight_decay = 0.0002
@@ -30,7 +30,7 @@ dataset_test = dataset.BSDS500(dataset_path, subset = "test")
 loader_train = dataset.create_dataloader(dataset_train, batch_size)
 loader_val = dataset.create_dataloader(dataset_val, batch_size)
 
-#Instance Modelcd 
+#Instance Model
 model = hed.HED(loss).to(device)
 model.load_pre_treined_weigths_vgg(device)
 
