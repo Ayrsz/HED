@@ -14,7 +14,7 @@ from structure.utils.original import load_original_hed
 #Hyper parameters
 lr = 1e-3
 batch_size = 10
-device = "cuda:1" if torch.cuda.is_available() else "cpu"
+device = "cuda:2" if torch.cuda.is_available() else "cpu"
 epochs = 10
 step_lr = False
 momentum = 0.9

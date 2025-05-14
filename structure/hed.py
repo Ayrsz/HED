@@ -118,15 +118,23 @@ class HED(nn.Module):
         image_four_scaled = F.interpolate(result_4 , size = (x.shape[2], x.shape[3]), mode = "bilinear", align_corners= False)
         image_five_scaled = F.interpolate(result_5, size = (x.shape[2], x.shape[3]), mode = "bilinear", align_corners= False)
 
+        #Stack the images
         stacked = torch.cat([image_one_scaled, image_two_scaled, image_three_scaled, image_four_scaled, image_five_scaled], dim = 1)
+        
+        #The fusion layer
         final_response = self.join_images(stacked)
-
+        
+        #Apply sigmoid after that
         torch.sigmoid_(stacked)
+        
+        #Result Pytorch
+        joint = torch.cat([final_response, stacked], dim = 1)
+        result = torch.mean(joint, axis = 1)
 
         if not(return_side_outputs):
-            return final_response
+            return result
         else:
-            return final_response, stacked
+            return result, joint
 
     def load_pre_treined_weigths_vgg(self, device):
         vgg16_pretrained = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1).to(device)

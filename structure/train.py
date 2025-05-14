@@ -19,10 +19,12 @@ def train_loop(dataloader, model, optimizer, eppoch, device):
         X, y = X.to(device), y.to(device)
         y = y.unsqueeze(1)
 
+
+        #side -> [fused, side1, ..., side5]
         pred, side_outs = model.forward(X, return_side_outputs = True)
 
 
-        loss = model.loss_fn(pred, y, fuse_layer = True )
+        loss = model.loss_fn(side_outs, y, fuse_layer = True )
 
         #Indice 0 its the batch indice
         for one_batch in side_outs: 
