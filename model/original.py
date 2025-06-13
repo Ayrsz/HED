@@ -1,38 +1,10 @@
 import cv2 as cv
 import os
-from data.dataset import BSDS500, create_dataloader
+from dataset import BSDS500, create_dataloader
 import numpy as np
 import matplotlib.pyplot as plt
-from train.train import load_state 
+from train import load_state, list_only_dirs 
 import torch
-
-def list_only_dirs(root_path):
-    return [nome for nome in os.listdir(root_path) if os.path.isdir(os.path.join(root_path, nome))]
-
-def load_state(device, state = None):
-
-    dirs = list_only_dirs("./states/")
-
-    #Check if has dirs with versions
-    if len(dirs) > 0:
-        numbers = [int(dir.split("_")[1]) for dir in dirs]
-        maxi = np.max(numbers)
-    else:
-        raise Exception("No Statements avaible to load")
-
-    #If NONE, return the last version
-    if state is None:
-        maxi = np.max(numbers)
-        idx = np.where(numbers == maxi)[0][0]
-    else:
-        #Return a tuple, where [0] is a vector of a single value
-        try:
-            idx = np.where(numbers == state)[0][0]
-        except Exception as e:
-            print(f"Erro, indice invalido para load: {e}")
-
-    model = torch.load(f"./states/model_{numbers[idx]:02d}/model#{numbers[idx]:02d}.pth", weights_only = False, map_location= torch.device(device))
-    return model
 
 class CropLayer(object):
         def __init__(self, params, blobs):
@@ -65,11 +37,12 @@ def load_original_hed():
     cv.dnn_registerLayer('Crop', CropLayer)
     return model
 
-def forward_return_cv_convence_original(original_hed, im_input_as_tensor):
-    im = im_input_as_tensor.permute(1, 2, 0).cpu().numpy()
+def forward_return_cv_convence_original(original_hed, im_input):
+    assert isinstance(im_input, torch.Tensor), f"Im need to be a tensor, got {type(im_input)}" 
+    im = im_input.permute(1, 2, 0).cpu().numpy()
     im = im * 255
     (H, W) = im.shape[:2]
-    im = im*255
+   
     blob = cv.dnn.blobFromImage(im,
                                 scalefactor=0.7,
                                 mean=(105, 117, 123),

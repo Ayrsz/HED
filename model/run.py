@@ -3,20 +3,23 @@ import torch.nn as nn
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
-import model.hed.hed as hed 
-from model.hed.hed import HED
-import model.train.train as train
-import model.data.dataset as dataset
-from model.hed.loss_hed import loss
+import hed as hed 
+from hed import HED
+import train as train
+import dataset as dataset
 from original import load_original_hed
+from numba import cuda
+import original
+
+
 
 
 #Hyper parameters
 lr = 1e-3
 batch_size = 10
-device = "cuda:2" if torch.cuda.is_available() else "cpu"
-epochs = 10
-step_lr = False
+device = "cuda:1" if torch.cuda.is_available() else "cpu"
+epochs = 100
+step_lr = True
 momentum = 0.9
 weight_decay = 0.0002
 
@@ -31,8 +34,8 @@ loader_train = dataset.create_dataloader(dataset_train, batch_size)
 loader_val = dataset.create_dataloader(dataset_val, batch_size)
 
 #Instance Model
-model = hed.HED(loss).to(device)
-model.load_pre_treined_weigths_vgg(device)
+model = hed.HED().to(device)
+#model.load_pre_treined_weigths_vgg(device)
 
 #Optimizer
 optmizer = torch.optim.SGD(params = model.parameters(), lr = lr, momentum= momentum, weight_decay= weight_decay)
@@ -43,7 +46,7 @@ train.save_new_state(model)
 
 #Load pre-treined
 #model = train.load_state(device)
-#print(model)
+##print(model)
 #train.plot_result_compare_to_gt(model, original.load_original_hed(), dataset.BSDS500(dataset_path, subset = "test"), device)
 
 
